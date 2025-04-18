@@ -39,7 +39,7 @@ Branches should be named according to their purpose and task:
   - `chore/` – for non-functional tasks
   - `refactor/` – for code restructuring
 
-> Example: If your task is `[SE01][BE]Set up Github repository`, your branch name would be `feature/SE01-setup-repository`.
+> Example: If your task is `[SE01][BE]Set up Github repository`, your branch name would be `feature/BE01-setup-repository`.
 
 ---
 
@@ -57,7 +57,7 @@ Follow a structured commit message format to maintain a clear history:
   - `chore` – for maintenance tasks
   - `refactor` – for code restructuring
 
-> Example: If your branch is `[SE05][BE]create delete account API`, your commit message would be `feat(SE05): create delete account API`.
+> Example: If your branch is `[SE05][BE]create delete account API`, your commit message would be `feat(BE05): create delete account API`.
 
 ---
 
@@ -161,13 +161,10 @@ The development process is organized for efficiency and consistency:
 │   │   │   └── model         # Entity models for database mapping
 │   │   └── resources
 │   │       ├── application.properties  # Spring Boot configuration
-│   │       └── static        # Static assets (if applicable)
-├── target                    # Compiled Java classes and JAR files
+│   │       ├── static        # Static assets (if applicable)
+|   |       └── templates     # Thymeleaf/HTML templates (optional)
 ├── pom.xml                   # Maven configuration for dependencies and build
 ├── docker-compose.yml        # (Optional) Docker setup for local development
-├── tsconfig.json             # TypeScript configuration (for TypeScript modules, if used)
-├── nodemon.json              # Nodemon configuration for development (if applicable)
-├── package.json              # NPM configuration (for hybrid TypeScript modules)
 └── README.md                 # Project documentation
 ```
 
