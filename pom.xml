@@ -9,17 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.LearnFlow</groupId>
-<<<<<<< Updated upstream
-    <artifactId>learnFlowBE</artifactId>
+    <artifactId>LearnFlow</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>learnFlowBE</name>
-    <description>learnFlowBE</description>
-=======
-    <artifactId>LearnFLow</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>LearnFLow</name>
-    <description>LearnFLow</description>
->>>>>>> Stashed changes
+    <name>LearnFlow</name>
+    <description>LearnFlow - Learning Management System</description>
     <url/>
     <licenses>
         <license/>
@@ -75,7 +68,17 @@
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>8.0.2.Final</version> <!-- Hoặc phiên bản mới nhất tương thích -->
+            <!-- Remove explicit version to use the one managed by Spring Boot -->
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <!-- Remove explicit version to use the one managed by Spring Boot -->
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
