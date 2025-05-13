@@ -1,8 +1,10 @@
 package Controller;
 
-import com.example.demo.dto.ForgotPasswordRequest;
-import com.example.demo.dto.ResetPasswordRequest;
-import com.example.demo.service.AuthService;
+import DTO.ForgotPasswordRequest;
+
+import DTO.ResetPasswordRequest;
+
+
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import service.AuthService;
 
 @RestController
 @RequestMapping("/api/auth")
