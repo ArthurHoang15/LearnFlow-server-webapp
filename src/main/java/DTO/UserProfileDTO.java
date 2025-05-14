@@ -6,28 +6,20 @@ import java.time.LocalDate;
 
 public class UserProfileDTO {
 
-    private String firstName;
-    private String lastName;
+    private String fullname;
     private LocalDate dateOfBirth;
-    private UserGender gender;
+    private String email;
+    private String phoneNumber;
+    private String address;
     private String picture;
-    private boolean isPublic;
 
     // Getters and Setters
-    public String getFirstName() {
-        return firstName;
+    public String getFullname() {
+        return fullname;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    public void setFullname(String fullname) {
+        this.fullname = fullname;
     }
 
     public LocalDate getDateOfBirth() {
@@ -38,12 +30,28 @@ public class UserProfileDTO {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public UserGender getGender() {
-        return gender;
+    public String getEmail() {
+        return email;
     }
 
-    public void setGender(UserGender gender) {
-        this.gender = gender;
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public String getPicture() {
@@ -52,13 +60,5 @@ public class UserProfileDTO {
 
     public void setPicture(String picture) {
         this.picture = picture;
-    }
-
-    public boolean isPublic() {
-        return isPublic;
-    }
-
-    public void setPublic(boolean isPublic) {
-        this.isPublic = isPublic;
     }
 }

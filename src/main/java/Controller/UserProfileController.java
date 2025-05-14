@@ -18,8 +18,8 @@ public class UserProfileController {
 
     @PutMapping("/profile")
     public ResponseEntity<UserProfileDTO> updateProfile(@RequestBody UserProfileDTO userProfileDTO) {
-
-        Long userId = 1L; // Thay bằng logic lấy userId thực tế
+        // Giả sử userId được lấy từ token hoặc session (hardcode tạm thời)
+        Long userId = 1L; // Thay bằng logic lấy userId thực tế (ví dụ: từ SecurityContext)
         UserProfileDTO updatedProfile = userProfileService.updateProfile(userId, userProfileDTO);
         return ResponseEntity.ok(updatedProfile);
     }

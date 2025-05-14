@@ -14,24 +14,23 @@ public class UserProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
+    @Column(name = "fullname")
+    private String fullname;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "gender")
-    private UserGender gender;
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "address")
+    private String address;
 
     @Column(name = "picture")
     private String picture;
-
-    @Column(name = "is_public")
-    private boolean isPublic;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
@@ -45,20 +44,12 @@ public class UserProfile {
         this.id = id;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public String getFullname() {
+        return fullname;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    public void setFullname(String fullname) {
+        this.fullname = fullname;
     }
 
     public LocalDate getDateOfBirth() {
@@ -69,12 +60,28 @@ public class UserProfile {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public UserGender getGender() {
-        return gender;
+    public String getEmail() {
+        return email;
     }
 
-    public void setGender(UserGender gender) {
-        this.gender = gender;
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public String getPicture() {
@@ -83,14 +90,6 @@ public class UserProfile {
 
     public void setPicture(String picture) {
         this.picture = picture;
-    }
-
-    public boolean isPublic() {
-        return isPublic;
-    }
-
-    public void setPublic(boolean isPublic) {
-        this.isPublic = isPublic;
     }
 
     public LocalDateTime getUpdatedAt() {

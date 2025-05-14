@@ -23,24 +23,24 @@ public class UserProfileService {
         }
 
         UserProfile userProfile = optionalUser.get();
-        userProfile.setFirstName(userProfileDTO.getFirstName());
-        userProfile.setLastName(userProfileDTO.getLastName());
+        userProfile.setFullname(userProfileDTO.getFullname());
         userProfile.setDateOfBirth(userProfileDTO.getDateOfBirth());
-        userProfile.setGender(userProfileDTO.getGender());
+        userProfile.setEmail(userProfileDTO.getEmail());
+        userProfile.setPhoneNumber(userProfileDTO.getPhoneNumber());
+        userProfile.setAddress(userProfileDTO.getAddress());
         userProfile.setPicture(userProfileDTO.getPicture());
-        userProfile.setPublic(userProfileDTO.isPublic());
         userProfile.setUpdatedAt(LocalDateTime.now());
 
         UserProfile updatedUser = userProfileRepository.save(userProfile);
 
         // Chuyển đổi entity thành DTO để trả về
         UserProfileDTO responseDTO = new UserProfileDTO();
-        responseDTO.setFirstName(updatedUser.getFirstName());
-        responseDTO.setLastName(updatedUser.getLastName());
+        responseDTO.setFullname(updatedUser.getFullname());
         responseDTO.setDateOfBirth(updatedUser.getDateOfBirth());
-        responseDTO.setGender(updatedUser.getGender());
+        responseDTO.setEmail(updatedUser.getEmail());
+        responseDTO.setPhoneNumber(updatedUser.getPhoneNumber());
+        responseDTO.setAddress(updatedUser.getAddress());
         responseDTO.setPicture(updatedUser.getPicture());
-        responseDTO.setPublic(updatedUser.isPublic());
 
         return responseDTO;
     }
