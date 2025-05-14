@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -33,4 +34,17 @@ public class AuthController {
         // Client sẽ lấy token từ URL và lưu vào local storage
         return ResponseEntity.ok("Authentication successful. Token: " + token);
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody AuthDto.TokenRefreshRequest request) {
+        AuthDto.TokenRefreshResponse response = authService.refreshToken(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@Valid @RequestBody AuthDto.LogoutRequest logoutRequest) {
+        authService.logout(logoutRequest);
+        return ResponseEntity.ok("Logged out successfully");
+    }
+
 }

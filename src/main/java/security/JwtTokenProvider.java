@@ -6,16 +6,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import exception.Login.JwtTokenExpiredException;
+import exception.Login.JwtTokenInvalidException;
+
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwt-secret}")
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
 
-    @Value("${app.jwt-expiration-milliseconds}")
+    @Value("${app.jwt-expiration-ms}")
     private long jwtExpirationMs;
 
     // Tạo JWT từ authentication object
@@ -58,13 +61,12 @@ public class JwtTokenProvider {
     // Validate JWT token
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
             return true;
-        } catch (Exception ex) {
-            return false;
+        } catch (ExpiredJwtException ex) {
+            throw new JwtTokenExpiredException("JWT đã hết hạn");
+        } catch (JwtException | IllegalArgumentException ex) {
+            throw new JwtTokenInvalidException("JWT không hợp lệ");
         }
     }
 

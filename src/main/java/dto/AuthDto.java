@@ -32,6 +32,7 @@ public class AuthDto {
     @AllArgsConstructor
     public static class LoginResponse {
         private String accessToken;
+        private String refreshToken;
         private String tokenType = "Bearer";
         private Long userId;
         private String username;
@@ -54,5 +55,29 @@ public class AuthDto {
 
         private String firstName;
         private String lastName;
+    }
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TokenRefreshRequest {
+        @NotBlank(message = "Refresh token is required")
+        private String refreshToken;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TokenRefreshResponse {
+        private String accessToken;
+        private String refreshToken;
+        private String tokenType = "Bearer";
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LogoutRequest {
+        @NotBlank(message = "Refresh token is required")
+        private String refreshToken;
     }
 }

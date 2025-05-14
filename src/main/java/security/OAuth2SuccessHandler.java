@@ -1,16 +1,21 @@
 package security;
 
+import model.RefreshToken;
 import model.User;
 import repository.UserRepository;
+import service.RefreshTokenService;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Map;
@@ -23,8 +28,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final UserRepository userRepository;
     private final JwtTokenProvider tokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
+    @Transactional
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         if (authentication instanceof OAuth2AuthenticationToken) {
@@ -34,43 +41,58 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String email = (String) attributes.get("email");
             String googleId = (String) attributes.get("sub");
 
-            Optional<User> existingUser = userRepository.findByGoogleId(googleId);
+            User user = processUserAuthentication(attributes, email, googleId);
 
-            User user;
-            if (existingUser.isPresent()) {
-                user = existingUser.get();
-            } else {
-                Optional<User> userByEmail = userRepository.findByEmail(email);
-                if (userByEmail.isPresent()) {
-                    // Link Google account to existing email account
-                    user = userByEmail.get();
-                    user.setGoogleId(googleId);
-                    userRepository.save(user);
-                } else {
-                    // Create new user
-                    user = new User();
-                    user.setGoogleId(googleId);
-                    user.setEmail(email);
-                    user.setUsername(email.split("@")[0] + "-" + UUID.randomUUID().toString().substring(0, 8));
-                    user.setFirstName((String) attributes.get("given_name"));
-                    user.setLastName((String) attributes.get("family_name"));
-                    user.setPassword(UUID.randomUUID().toString());
-                    user.setPicture((String) attributes.get("picture"));
-                    user.setIsPublic(false);
-                    userRepository.save(user);
-                }
-            }
+            // Tạo access token
+            String accessToken = tokenProvider.generateTokenFromUsername(user.getUsername());
 
-            // Generate JWT token
-            String token = tokenProvider.generateTokenFromUsername(user.getUsername());
+            // Lưu access token vào user (nếu cần)
+            user.setAccessToken(accessToken);
 
-            // Update access token
-            user.setAccessToken(token);
-            userRepository.save(user);
+            // Tạo refresh token
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
-            // Redirect with token
-            String redirectUrl = "/oauth2/redirect?token=" + token;
+            // Redirect với token
+            String redirectUrl = "/oauth2/redirect?token=" + accessToken
+                    + "&refreshToken=" + refreshToken.getToken();
+
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         }
+    }
+
+    private User processUserAuthentication(Map<String, Object> attributes, String email, String googleId) {
+        // Tìm user theo googleId
+        Optional<User> existingUserByGoogleId = userRepository.findByGoogleId(googleId);
+
+        if (existingUserByGoogleId.isPresent()) {
+            return existingUserByGoogleId.get();
+        }
+
+        // Tìm user theo email
+        Optional<User> existingUserByEmail = userRepository.findByEmail(email);
+
+        if (existingUserByEmail.isPresent()) {
+            User user = existingUserByEmail.get();
+            user.setGoogleId(googleId);
+            return user;
+        }
+
+        // Tạo user mới
+        User newUser = new User();
+        newUser.setGoogleId(googleId);
+        newUser.setEmail(email);
+        newUser.setUsername(generateUniqueUsername(email));
+        newUser.setFirstName((String) attributes.get("given_name"));
+        newUser.setLastName((String) attributes.get("family_name"));
+        newUser.setPassword(UUID.randomUUID().toString());
+        newUser.setPicture((String) attributes.get("picture"));
+        newUser.setIsPublic(false);
+
+        return userRepository.save(newUser);
+    }
+
+    private String generateUniqueUsername(String email) {
+        String baseUsername = email.split("@")[0];
+        return baseUsername + "-" + UUID.randomUUID().toString().substring(0, 8);
     }
 }
