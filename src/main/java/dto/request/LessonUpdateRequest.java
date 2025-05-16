@@ -1,7 +1,7 @@
 package dto.request;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+
 
 public class LessonUpdateRequest {
 

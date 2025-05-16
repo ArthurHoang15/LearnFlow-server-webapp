@@ -1,9 +1,7 @@
 package dto.request;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 
-@Data
 public class LessonCreateRequest {
 
     @NotNull(message = "chapter_id không được để trống")
