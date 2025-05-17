@@ -8,10 +8,10 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "otp_codes")
+@Table(name = "otp_codes") // Giữ nguyên tên bảng hoặc đổi nếu muốn
 @Getter
 @Setter
-@NoArgsConstructor // Lombok sẽ tạo constructor không tham số
+@NoArgsConstructor
 public class OTPEntity {
 
     @Id
@@ -19,17 +19,22 @@ public class OTPEntity {
     private Long id;
 
     @Column(nullable = false)
-    private String email; // Email của người dùng liên kết với OTP này
+    private String email;
 
     @Column(nullable = false)
     private String code; // Mã OTP đã được HASH
 
     @Column(nullable = false)
-    private LocalDateTime expiryDate; // Thời gian OTP hết hạn
+    private LocalDateTime expiryDate;
 
-    public OTPEntity(String email, String hashedCode, LocalDateTime expiryDate) {
+    @Enumerated(EnumType.STRING) // Lưu trữ enum dưới dạng String
+    @Column(nullable = false)
+    private OtpPurpose purpose; // THÊM TRƯỜNG NÀY
+
+    public OTPEntity(String email, String hashedCode, LocalDateTime expiryDate, OtpPurpose purpose) {
         this.email = email;
         this.code = hashedCode;
         this.expiryDate = expiryDate;
+        this.purpose = purpose;
     }
 }

@@ -1,4 +1,4 @@
-package service;
+package service.OTP;
 
 public interface SenderService {
     /**

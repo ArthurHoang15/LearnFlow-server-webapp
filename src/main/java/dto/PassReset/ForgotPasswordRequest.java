@@ -1,4 +1,4 @@
-package dto;
+package dto.PassReset;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -6,10 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-@Data // Lombok: tự động tạo getters, setters, toString, equals, hashCode
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OTPRequest {
+public class ForgotPasswordRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")

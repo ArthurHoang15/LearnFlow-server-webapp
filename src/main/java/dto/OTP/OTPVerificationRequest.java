@@ -1,4 +1,4 @@
-package dto;
+package dto.OTP;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

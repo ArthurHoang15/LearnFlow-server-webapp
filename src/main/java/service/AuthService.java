@@ -23,6 +23,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import service.OTP.OTPService;
+import dto.PassReset.ResetPasswordRequest;
+import dto.PassReset.ForgotPasswordRequest;
+import service.OTP.OTPService;
+import service.OTP.SenderService;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 
 // import java.time.Instant; // Không cần trực tiếp ở đây nữa
 // import java.util.UUID; // Không cần trực tiếp ở đây nữa
@@ -40,6 +47,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService; // TIÊM RefreshTokenService
     private final OTPService otpService;
     private final CustomUserDetailsService customUserDetailsService;
+    private final SenderService emailSenderService;
 
     // Thời gian sống refresh token sẽ được quản lý bởi RefreshTokenService
     // private final long refreshTokenDurationMs = 7 * 24 * 60 * 60 * 1000L; // BỎ ĐI
@@ -226,4 +234,68 @@ public class AuthService {
         return refreshTokenRepository.save(refreshToken);
     }
     */
+    /**
+     * Xử lý yêu cầu đặt lại mật khẩu.
+     * Gửi OTP đặt lại mật khẩu đến email người dùng nếu email tồn tại và tài khoản đã kích hoạt.
+     */
+    @Transactional
+    public void requestPasswordReset(ForgotPasswordRequest request) {
+        logger.info("Password reset requested for email: {}", request.getEmail());
+        // OTPService.generateAndSendOTPForPasswordReset sẽ kiểm tra user tồn tại và đã enabled
+        otpService.generateAndSendOTPForPasswordReset(request.getEmail());
+        // Controller sẽ trả về thông báo cho người dùng
+    }
+
+    /**
+     * Xác thực OTP và đặt lại mật khẩu mới cho người dùng.
+     */
+    @Transactional
+    public void verifyOtpAndResetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail();
+        String otp = request.getOtp();
+        String newPassword = request.getNewPassword();
+        String confirmNewPassword = request.getConfirmNewPassword();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+        String formattedDateTime = LocalDateTime.now().format(formatter);
+
+        logger.info("Attempting to reset password for email: {}", email);
+
+        // 1. Kiểm tra mật khẩu mới và xác nhận mật khẩu có khớp không
+        if (!newPassword.equals(confirmNewPassword)) {
+            logger.warn("New password and confirm password do not match for email: {}", email);
+            throw new IllegalArgumentException("Mật khẩu mới và xác nhận mật khẩu không khớp.");
+        }
+
+        // 2. Xác thực OTP cho mục đích đặt lại mật khẩu
+        if (!otpService.verifyOTPForPasswordReset(email, otp)) {
+            logger.warn("Password reset OTP verification failed for email: {}. Invalid or expired OTP.", email);
+            throw new InvalidCredentialsException("Mã OTP không hợp lệ hoặc đã hết hạn.");
+        }
+        logger.info("Password reset OTP verified successfully for email: {}", email);
+
+        // 3. Tìm người dùng và cập nhật mật khẩu
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    logger.error("User not found with email {} during password reset. This should not happen if OTP was for a valid user.", email);
+                    return new ResourceNotFoundException("User", "email", email);
+                });
+
+        // (Tùy chọn) Kiểm tra mật khẩu mới không trùng mật khẩu cũ
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            logger.warn("New password is the same as the old password for email: {}", email);
+            throw new IllegalArgumentException("Mật khẩu mới không được trùng với mật khẩu cũ.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        // userRepository.save(user); // Không cần thiết nếu @Transactional và user là managed entity,
+        // nhưng để cho chắc chắn và rõ ràng, có thể giữ lại.
+        // Nếu User entity không có @Transactional trên class, thì save() là cần thiết.
+        // Vì phương thức này của AuthService đã có @Transactional, nên không bắt buộc.
+        logger.info("Password reset successfully for email: {}.", email);
+
+//         Tùy chọn: Gửi email thông báo mật khẩu đã được thay đổi thành công
+         String subject = "LearnFlow - Mật Khẩu Đã Được Thay Đổi";
+         String content = String.format("Chào bạn %s,\n\nMật khẩu cho tài khoản LearnFlow của bạn đã được thay đổi thành công vào lúc %s.\n\nNếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.\n\nTrân trọng,\nĐội ngũ LearnFlow", user.getUsername(), LocalDateTime.now().toString());
+         emailSenderService.send(email, subject, content);
+    }
 }

@@ -1,7 +1,7 @@
 package controller;
 
 import dto.AuthDto;
-import dto.OTPVerificationRequest; // THÊM IMPORT NÀY
+import dto.OTP.OTPVerificationRequest; // THÊM IMPORT NÀY
 import service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory; // THÊM LOGGER
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dto.PassReset.ForgotPasswordRequest;
+import dto.PassReset.ResetPasswordRequest;
 
 // Cân nhắc lại origin cho @CrossOrigin, có thể là "http://localhost:3000" nếu frontend chạy ở port 3000
 // Hoặc cấu hình CORS toàn cục trong SecurityConfig sẽ tốt hơn.
@@ -121,5 +123,30 @@ public class AuthController {
         authService.logout(logoutRequest);
         logger.info("User logged out successfully.");
         return ResponseEntity.ok("Đăng xuất thành công.");
+    }
+
+    /**
+     * Endpoint để người dùng yêu cầu gửi OTP đặt lại mật khẩu.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> requestPasswordReset(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+        logger.info("Received forgot password request for email: {}", forgotPasswordRequest.getEmail());
+        authService.requestPasswordReset(forgotPasswordRequest);
+        String successMessage = "Nếu email của bạn tồn tại trong hệ thống và đã được kích hoạt, " +
+                "một mã OTP để đặt lại mật khẩu đã được gửi đến " + forgotPasswordRequest.getEmail() + ". " +
+                "Vui lòng kiểm tra hộp thư đến (và cả mục spam).";
+        // Trả về thông báo chung chung để không tiết lộ email có tồn tại hay không
+        return ResponseEntity.ok(successMessage);
+    }
+
+    /**
+     * Endpoint để người dùng xác thực OTP và đặt lại mật khẩu mới.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPasswordWithOtp(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        logger.info("Received reset password request for email: {}", resetPasswordRequest.getEmail());
+        authService.verifyOtpAndResetPassword(resetPasswordRequest);
+        logger.info("Password reset successfully for email: {}", resetPasswordRequest.getEmail());
+        return ResponseEntity.ok("Mật khẩu của bạn đã được đặt lại thành công. Vui lòng đăng nhập bằng mật khẩu mới.");
     }
 }
