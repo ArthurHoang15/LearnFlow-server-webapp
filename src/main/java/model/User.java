@@ -61,6 +61,10 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "enabled", nullable = false)
+    @Builder.Default // Giá trị mặc định khi sử dụng builder
+    private boolean enabled = false; // Mặc định tài khoản chưa được kích hoạt
+
     // Phương thức tiện ích cho Spring Security
     public boolean hasGoogleLogin() {
         return googleId != null && !googleId.isEmpty();

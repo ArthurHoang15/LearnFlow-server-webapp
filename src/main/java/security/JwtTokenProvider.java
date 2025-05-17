@@ -18,7 +18,7 @@ public class JwtTokenProvider {
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
-    @Value("${app.jwt-expiration-ms}")
+    @Value("${app.jwt.access-expiration-ms}")
     private long jwtExpirationMs;
 
     // Tạo JWT từ authentication object
