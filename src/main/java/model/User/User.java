@@ -1,4 +1,4 @@
-package model;
+package model.User;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,7 +7,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -64,6 +63,13 @@ public class User {
     @Column(name = "enabled", nullable = false)
     @Builder.Default // Giá trị mặc định khi sử dụng builder
     private boolean enabled = false; // Mặc định tài khoản chưa được kích hoạt
+
+    @ManyToMany(fetch = FetchType.EAGER) // EAGER để lấy roles ngay khi load User cho Spring Security
+    @JoinTable(name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @Builder.Default // Đảm bảo roles được khởi tạo nếu dùng builder
+    private Set<Role> roles = new HashSet<>();
 
     // Phương thức tiện ích cho Spring Security
     public boolean hasGoogleLogin() {

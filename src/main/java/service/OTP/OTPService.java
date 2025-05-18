@@ -1,11 +1,9 @@
 package service.OTP;
 
-import dto.OTP.OTPRequest; // DTO này chỉ cần email
-import exception.Login.InvalidCredentialsException;
 import exception.Login.ResourceNotFoundException;
 import model.OTP.OTPEntity;
 import model.OTP.OtpPurpose; // THÊM IMPORT
-import model.User;
+import model.User.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;

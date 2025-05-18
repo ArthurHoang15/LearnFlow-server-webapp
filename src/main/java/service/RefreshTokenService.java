@@ -1,7 +1,7 @@
 package service;
 
 import model.RefreshToken;
-import model.User;
+import model.User.User;
 import repository.RefreshTokenRepository;
 import repository.UserRepository;
 import exception.Login.TokenRefreshException;
@@ -9,6 +9,8 @@ import exception.Login.TokenRefreshException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -18,6 +20,8 @@ import java.util.UUID;
 public class RefreshTokenService {
     @Value("${app.jwt.refresh-expiration-ms:86400000}")
     private Long refreshTokenDurationMs;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
@@ -61,4 +65,15 @@ public class RefreshTokenService {
     public void revokeRefreshToken(String token) {
         refreshTokenRepository.deleteByToken(token);
     }
-}
+
+    @Transactional
+    public void revokeAllTokensForUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElse(null);
+        if (user != null) {
+            refreshTokenRepository.deleteByUser(user); // Giả sử bạn có phương thức này trong RefreshTokenRepository
+            logger.info("All refresh tokens revoked for user ID: {}", userId);
+        } else {
+            logger.warn("Attempted to revoke tokens for non-existent user ID: {}", userId);
+        }
+}   }

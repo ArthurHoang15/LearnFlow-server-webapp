@@ -1,7 +1,7 @@
 package security;
 
 import model.RefreshToken;
-import model.User;
+import model.User.User;
 import repository.UserRepository;
 import service.RefreshTokenService;
 

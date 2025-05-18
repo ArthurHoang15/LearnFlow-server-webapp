@@ -1,7 +1,7 @@
 package repository;
 
 import model.RefreshToken;
-import model.User;
+import model.User.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;

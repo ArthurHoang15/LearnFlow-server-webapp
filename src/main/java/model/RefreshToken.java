@@ -1,6 +1,8 @@
 package model;
 
 import jakarta.persistence.*;
+import model.User.User;
+
 import java.time.Instant;
 
 @Entity

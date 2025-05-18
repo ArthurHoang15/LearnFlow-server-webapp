@@ -6,7 +6,7 @@ import exception.Login.ResourceNotFoundException;
 import exception.Login.TokenRefreshException;
 import exception.Login.UserAlreadyExistsException;
 import model.RefreshToken;
-import model.User;
+import model.User.User;
 // import repository.RefreshTokenRepository; // KHÔNG CẦN NỮA, SẼ DÙNG RefreshTokenService
 import repository.UserRepository;
 import security.JwtTokenProvider;
@@ -26,10 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 import service.OTP.OTPService;
 import dto.PassReset.ResetPasswordRequest;
 import dto.PassReset.ForgotPasswordRequest;
-import service.OTP.OTPService;
 import service.OTP.SenderService;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import model.User.ERole;
+import model.User.Role;
+import repository.RoleRepository;
 
 // import java.time.Instant; // Không cần trực tiếp ở đây nữa
 // import java.util.UUID; // Không cần trực tiếp ở đây nữa
@@ -48,6 +50,7 @@ public class AuthService {
     private final OTPService otpService;
     private final CustomUserDetailsService customUserDetailsService;
     private final SenderService emailSenderService;
+    private final RoleRepository roleRepository;
 
     // Thời gian sống refresh token sẽ được quản lý bởi RefreshTokenService
     // private final long refreshTokenDurationMs = 7 * 24 * 60 * 60 * 1000L; // BỎ ĐI
@@ -118,8 +121,13 @@ public class AuthService {
                 .enabled(false)
                 .build();
 
+        // --- GÁN ROLE MẶC ĐỊNH ---
+        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new RuntimeException("Error: Role USER is not found. Please ensure it's initialized in the database."));
+        user.getRoles().add(userRole);
+
         userRepository.save(user);
-        logger.info("User {} registered successfully with enabled=false.", user.getUsername());
+        logger.info("User {} registered successfully with enabled=false.", user.getUsername(), ERole.ROLE_USER);
 
         try {
             otpService.generateAndSendOTPForRegistration(registerRequest.getEmail());
