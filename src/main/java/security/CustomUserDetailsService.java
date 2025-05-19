@@ -1,44 +1,42 @@
 package security;
 
+import exception.Login.ResourceNotFoundException;
 import model.User.User;
 import repository.UserRepository;
-import org.springframework.security.core.GrantedAuthority;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
-@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    @Autowired // Hoặc dùng constructor injection với @RequiredArgsConstructor trên class
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
+    @Transactional // Quan trọng để lazy loading (ví dụ: user.getRoles()) hoạt động nếu có
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         User user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + usernameOrEmail));
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with username or email : " + usernameOrEmail)
+                );
+        // Tạo và trả về UserPrincipal
+        return UserPrincipal.create(user);
+    }
 
-        // --- CẬP NHẬT ĐỂ LOAD ROLES ---
-        List<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
-                .collect(Collectors.toList());
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(), // Hoặc user.getEmail() tùy theo cách bạn muốn định danh principal
-                user.getPassword(),
-                user.isEnabled(),   // Sử dụng trường enabled của bạn
-                true,               // accountNonExpired
-                true,               // credentialsNonExpired
-                true,               // accountNonLocked
-                authorities         // Danh sách các quyền (roles)
+    // (Tùy chọn) Nếu bạn cần load user theo ID cho một số trường hợp khác của Spring Security
+    @Transactional
+    public UserDetails loadUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("User", "id", id.toString())
         );
+        return UserPrincipal.create(user);
     }
 }

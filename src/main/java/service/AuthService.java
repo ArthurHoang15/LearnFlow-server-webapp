@@ -127,7 +127,7 @@ public class AuthService {
         user.getRoles().add(userRole);
 
         userRepository.save(user);
-        logger.info("User {} registered successfully with enabled=false.", user.getUsername(), ERole.ROLE_USER);
+        logger.info("User {} registered successfully with role {} and enabled=false.", user.getUsername(), ERole.ROLE_USER);
 
         try {
             otpService.generateAndSendOTPForRegistration(registerRequest.getEmail());
@@ -263,47 +263,53 @@ public class AuthService {
         String otp = request.getOtp();
         String newPassword = request.getNewPassword();
         String confirmNewPassword = request.getConfirmNewPassword();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
-        String formattedDateTime = LocalDateTime.now().format(formatter);
 
         logger.info("Attempting to reset password for email: {}", email);
 
-        // 1. Kiểm tra mật khẩu mới và xác nhận mật khẩu có khớp không
         if (!newPassword.equals(confirmNewPassword)) {
             logger.warn("New password and confirm password do not match for email: {}", email);
             throw new IllegalArgumentException("Mật khẩu mới và xác nhận mật khẩu không khớp.");
         }
 
-        // 2. Xác thực OTP cho mục đích đặt lại mật khẩu
-        if (!otpService.verifyOTPForPasswordReset(email, otp)) {
+        if (!otpService.verifyOTPForPasswordReset(email, otp)) { // Giả sử OTPService có phương thức này
             logger.warn("Password reset OTP verification failed for email: {}. Invalid or expired OTP.", email);
             throw new InvalidCredentialsException("Mã OTP không hợp lệ hoặc đã hết hạn.");
         }
         logger.info("Password reset OTP verified successfully for email: {}", email);
 
-        // 3. Tìm người dùng và cập nhật mật khẩu
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     logger.error("User not found with email {} during password reset. This should not happen if OTP was for a valid user.", email);
                     return new ResourceNotFoundException("User", "email", email);
                 });
 
-        // (Tùy chọn) Kiểm tra mật khẩu mới không trùng mật khẩu cũ
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
             logger.warn("New password is the same as the old password for email: {}", email);
             throw new IllegalArgumentException("Mật khẩu mới không được trùng với mật khẩu cũ.");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        // userRepository.save(user); // Không cần thiết nếu @Transactional và user là managed entity,
-        // nhưng để cho chắc chắn và rõ ràng, có thể giữ lại.
-        // Nếu User entity không có @Transactional trên class, thì save() là cần thiết.
-        // Vì phương thức này của AuthService đã có @Transactional, nên không bắt buộc.
+        // userRepository.save(user); // Không bắt buộc nếu @Transactional và user là managed entity
         logger.info("Password reset successfully for email: {}.", email);
 
-//         Tùy chọn: Gửi email thông báo mật khẩu đã được thay đổi thành công
-         String subject = "LearnFlow - Mật Khẩu Đã Được Thay Đổi";
-         String content = String.format("Chào bạn %s,\n\nMật khẩu cho tài khoản LearnFlow của bạn đã được thay đổi thành công vào lúc %s.\n\nNếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.\n\nTrân trọng,\nĐội ngũ LearnFlow", user.getUsername(), LocalDateTime.now().toString());
-         emailSenderService.send(email, subject, content);
+        // Gửi email thông báo mật khẩu đã được thay đổi thành công
+        try {
+            String subject = "LearnFlow - Mật Khẩu Đã Được Thay Đổi";
+            // Sử dụng DateTimeFormatter để định dạng ngày giờ
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+            String formattedDateTime = LocalDateTime.now().format(formatter);
+            String content = String.format(
+                    "Chào bạn %s,\n\nMật khẩu cho tài khoản LearnFlow của bạn đã được thay đổi thành công vào lúc %s.\n\n" +
+                            "Nếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.\n\n" +
+                            "Trân trọng,\nĐội ngũ LearnFlow",
+                    user.getUsername(), // Hoặc user.getFirstName() nếu có
+                    formattedDateTime // Sử dụng ngày giờ đã định dạng
+            );
+            emailSenderService.send(email, subject, content); // Giả sử emailSenderService đã được tiêm
+            logger.info("Password change confirmation email sent to {}", email);
+        } catch (Exception e) {
+            logger.error("Failed to send password change confirmation email to {}: {}", email, e.getMessage(), e);
+            // KHÔNG throw e ở đây để tránh rollback việc đổi mật khẩu
+        }
     }
 }

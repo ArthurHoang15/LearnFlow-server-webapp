@@ -21,7 +21,7 @@ public class RefreshTokenService {
     @Value("${app.jwt.refresh-expiration-ms:86400000}")
     private Long refreshTokenDurationMs;
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    private static final Logger logger = LoggerFactory.getLogger(RefreshTokenService.class);
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;

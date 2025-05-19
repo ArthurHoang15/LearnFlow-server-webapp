@@ -49,8 +49,8 @@ public class User {
     @Column(name = "google_id")
     private String googleId;
 
-    @Column(name = "access_token")
-    private String accessToken;
+//    @Column(name = "access_token")
+//    private String accessToken;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
