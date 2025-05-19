@@ -1,12 +1,6 @@
 package controller;
 
-import dto.Learning.LessonDetailDto;
-import dto.Learning.LessonListItemDto;
-import dto.Learning.LessonSubmissionResponse; // THÊM IMPORT
-import dto.Learning.SubmitLessonRequest;    // THÊM IMPORT
-import dto.Learning.ReviewSessionDto;
-import dto.Learning.MistakeListItemDto;
-import dto.Learning.ReviewMistakesRequestDto;
+import dto.Learning.*;
 import service.LearningService;
 
 import jakarta.validation.Valid; // THÊM IMPORT
@@ -75,5 +69,17 @@ public class LearningController {
         logger.info("Received request to review mistakes for question IDs: {}", request.getQuestionIds());
         ReviewSessionDto reviewSession = learningService.getMistakeReviewSession(request);
         return ResponseEntity.ok(reviewSession);
+    }
+
+    /**
+     * ST-61: API lấy tiến độ của người dùng hiện tại cho một bài học cụ thể.
+     */
+    @GetMapping("/progress/{lessonId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LessonProgressDto> getLessonProgress(@PathVariable Long lessonId) {
+        logger.info("Received request to get progress for lesson ID: {}", lessonId);
+        LessonProgressDto progressDto = learningService.getLessonProgress(lessonId);
+        // Không cần kiểm tra null ở đây nữa nếu orElseGet trong service luôn tạo object
+        return ResponseEntity.ok(progressDto);
     }
 }

@@ -1,40 +1,48 @@
 package service;
 
-// THAY THẾ WILDCARD IMPORTS BẰNG IMPORT CỤ THỂ
-import dto.Learning.QuestionDto;
+// --- DTO Imports ---
 import dto.Learning.AnswerAttemptDto;
 import dto.Learning.AnswerOptionDto;
 import dto.Learning.LessonDetailDto;
 import dto.Learning.LessonListItemDto;
+import dto.Learning.LessonProgressDto; // Cho ST-61
 import dto.Learning.LessonSubmissionResponse;
-import dto.Learning.ProgressDto;
+import dto.Learning.MistakeListItemDto;
+import dto.Learning.LessonProgressDto;
+import dto.Learning.QuestionDto;
 import dto.Learning.ReviewMistakesRequestDto;
 import dto.Learning.ReviewSessionDto;
 import dto.Learning.SubmitLessonRequest;
-import dto.Learning.MistakeListItemDto; // Thêm nếu chưa có
 
+// --- Exception Imports ---
 import exception.Login.ResourceNotFoundException;
 
-import model.Learning.Lesson; // Điều chỉnh package nếu Lesson ở model.Learning
-import model.Learning.Question; // Điều chỉnh package nếu Question ở model.Learning
-import model.Learning.Question.QuestionType; // Điều chỉnh package nếu QuestionType ở model.Learning
-import model.User.User; // Điều chỉnh package nếu User ở model.User
-import model.LessonProgress;
+// --- Model Imports (Điều chỉnh package nếu cần) ---
+import model.Learning.AnswerOption;
+import model.Learning.Lesson;
+import model.Learning.LessonProgress;
 import model.Learning.Mistake;
-import model.Learning.AnswerOption; // Nếu Question.getAnswerOptions() trả về Set<AnswerOption>
+import model.Learning.Question;
+import model.Learning.Question.QuestionType; // Giả sử đây là Enum: FILL_IN_THE_BLANK, MULTIPLE_CHOICE
+import model.User.User;
 
+// --- Repository Imports (Điều chỉnh package nếu cần) ---
+import repository.LessonProgressRepository;
 import repository.LessonRepository;
+import repository.MistakeRepository;
 import repository.QuestionRepository;
 import repository.UserRepository;
-import repository.LessonProgressRepository;
-import repository.MistakeRepository;
-// import repository.AnswerOptionRepository; // Nếu cần
+// import repository.AnswerOptionRepository; // Nếu bạn cần truy vấn AnswerOption trực tiếp
 
+// --- Security Imports ---
 import security.UserPrincipal;
 
+// --- Lombok and Logging ---
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+// --- Spring Framework Imports ---
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -43,8 +51,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// --- Java Util Imports ---
 import java.time.LocalDateTime;
-import java.util.ArrayList; // Vẫn cần cho list khác nếu có
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +69,9 @@ public class LearningService {
     private final LessonProgressRepository lessonProgressRepository;
     private final MistakeRepository mistakeRepository;
 
+    /**
+     * ST-59: Lấy danh sách tất cả các bài học.
+     */
     @Transactional(readOnly = true)
     public Page<LessonListItemDto> getAllLessons(Pageable pageable) {
         logger.info("Fetching all lessons with pagination: {}", pageable);
@@ -71,13 +82,16 @@ public class LearningService {
                         .id(lesson.getId())
                         .description(lesson.getDescription())
                         .format(lesson.getFormat() != null ? (lesson.getFormat() instanceof Enum ? ((Enum<?>) lesson.getFormat()).name() : lesson.getFormat().toString()) : null)
-                        .unlocked(true)
+                        .unlocked(true) // Theo yêu cầu đơn giản hóa
                         .build())
                 .collect(Collectors.toList());
 
         return new PageImpl<>(dtoList, pageable, lessonPage.getTotalElements());
     }
 
+    /**
+     * ST-54: Lấy dữ liệu chi tiết của một bài học tương tác.
+     */
     @Transactional(readOnly = true)
     public LessonDetailDto getLessonDetails(Long lessonId) {
         logger.info("Fetching details for lesson ID: {}", lessonId);
@@ -86,15 +100,14 @@ public class LearningService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson", "id", String.valueOf(lessonId)));
 
         List<Question> questions;
-        // Kiểm tra xem QuestionRepository có phương thức sắp xếp không
-        // if (phương thức findByLessonIdOrderByOrderInLessonAsc tồn tại) {
-        //     questions = questionRepository.findByLessonIdOrderByOrderInLessonAsc(lessonId);
-        // } else {
-        questions = questionRepository.findByLessonId(lessonId);
-        // }
-        // Giả sử bạn đã có findByLessonIdOrderByOrderInLessonAsc hoặc bạn sẽ thêm nó
-        // questions = questionRepository.findByLessonIdOrderByOrderInLessonAsc(lessonId);
-
+        try {
+            // Ưu tiên sử dụng phương thức có sắp xếp nếu repository hỗ trợ
+            questions = questionRepository.findByLessonIdOrderByOrderInLessonAsc(lessonId);
+            logger.debug("Fetched questions for lesson {} with specific ordering.", lessonId);
+        } catch (Exception e) {
+            logger.warn("Could not fetch questions with specific ordering for lesson {}. Falling back to default findByLessonId. Error: {}", lessonId, e.getMessage());
+            questions = questionRepository.findByLessonId(lessonId);
+        }
 
         List<QuestionDto> questionDtos = questions.stream()
                 .map(this::mapQuestionToDto)
@@ -129,6 +142,9 @@ public class LearningService {
                 .build();
     }
 
+    /**
+     * ST-60: Xử lý việc người dùng nộp bài cho một bài học.
+     */
     @Transactional
     public LessonSubmissionResponse submitLessonAnswers(SubmitLessonRequest request) {
         User currentUser = getCurrentAuthenticatedUser();
@@ -143,32 +159,26 @@ public class LearningService {
 
         int correctCountInSubmission = 0;
         int totalQuestionsAttemptedInThisSubmission = request.getAnswers().size();
-        // List<FeedbackDto> feedbackList = new ArrayList<>(); // LOẠI BỎ feedbackList
 
         for (AnswerAttemptDto userAnswerDto : request.getAnswers()) {
             Question question = questionMap.get(userAnswerDto.getQuestionId());
             if (question == null) {
                 logger.warn("User {} submitted answer for non-existent questionId {} in lesson {}",
                         currentUser.getUsername(), userAnswerDto.getQuestionId(), lesson.getId());
-                // Không tạo feedback nữa
-                continue;
+                continue; // Bỏ qua câu trả lời cho câu hỏi không tồn tại
             }
 
             boolean isCorrect = false;
-            // Không cần FeedbackDto.FeedbackDtoBuilder nữa
-
             String questionTypeFromDb = question.getType() instanceof Enum ? ((Enum<?>) question.getType()).name() : question.getType().toString();
 
             if (QuestionType.FILL_IN_THE_BLANK.name().equalsIgnoreCase(questionTypeFromDb)) {
                 String correctAnswerText = question.getCorrectAnswerText();
-                // feedbackBuilder.correctAnswer(correctAnswerText); // LOẠI BỎ
                 if (correctAnswerText != null && userAnswerDto.getUserAnswer() != null &&
                         correctAnswerText.trim().equalsIgnoreCase(userAnswerDto.getUserAnswer().trim())) {
                     isCorrect = true;
                 }
             } else if (QuestionType.MULTIPLE_CHOICE.name().equalsIgnoreCase(questionTypeFromDb)) {
                 Long correctAnswerOptionId = question.getCorrectAnswerOptionId();
-                // feedbackBuilder.correctAnswerId(correctAnswerOptionId); // LOẠI BỎ
                 if (correctAnswerOptionId != null &&
                         correctAnswerOptionId.equals(userAnswerDto.getUserAnswerId())) {
                     isCorrect = true;
@@ -176,9 +186,6 @@ public class LearningService {
             } else {
                 logger.warn("Unsupported question type '{}' for questionId {}", questionTypeFromDb, question.getId());
             }
-
-            // feedbackBuilder.isCorrect(isCorrect); // LOẠI BỎ
-            // feedbackList.add(feedbackBuilder.build()); // LOẠI BỎ
 
             if (isCorrect) {
                 correctCountInSubmission++;
@@ -203,9 +210,11 @@ public class LearningService {
                     LessonProgress newProgress = new LessonProgress();
                     newProgress.setUser(currentUser);
                     newProgress.setLesson(lesson);
+                    // Các giá trị mặc định đã được set trong LessonProgress entity (ví dụ: count=0, completed=false)
                     return newProgress;
                 });
 
+        // Cập nhật progress
         lessonProgress.setCorrectAnswersCount(lessonProgress.getCorrectAnswersCount() + correctCountInSubmission);
         int incorrectInSubmission = totalQuestionsAttemptedInThisSubmission - correctCountInSubmission;
         lessonProgress.setIncorrectAnswersCount(lessonProgress.getIncorrectAnswersCount() + incorrectInSubmission);
@@ -220,22 +229,23 @@ public class LearningService {
         if (request.getTimeSpentSeconds() != null) {
             lessonProgress.setTimeSpentSeconds(lessonProgress.getTimeSpentSeconds() + request.getTimeSpentSeconds());
         } else {
-            logger.warn("timeSpentSeconds is null in SubmitLessonRequest for lessonId: {}. Adding default time.", request.getLessonId());
-            lessonProgress.setTimeSpentSeconds(lessonProgress.getTimeSpentSeconds() + 60L);
+            logger.warn("timeSpentSeconds is null in SubmitLessonRequest for lessonId: {}. No time will be added for this submission.", request.getLessonId());
         }
 
-        if (lessonProgress.getTotalQuestionsAttempted() >= totalQuestionsInLesson) {
+        if (!lessonProgress.isCompleted() && lessonProgress.getTotalQuestionsAttempted() >= totalQuestionsInLesson) {
+            // Logic hoàn thành có thể phức tạp hơn, ví dụ: đạt điểm tối thiểu
+            // Hiện tại: hoàn thành nếu đã thử làm tất cả các câu
             lessonProgress.setCompleted(true);
-            if (lessonProgress.getCompletedAt() == null) {
-                lessonProgress.setCompletedAt(LocalDateTime.now());
-            }
+            lessonProgress.setCompletedAt(LocalDateTime.now());
         }
+        // updatedAt sẽ tự động cập nhật bởi @UpdateTimestamp
 
         lessonProgressRepository.save(lessonProgress);
-        logger.info("Lesson progress updated for user {} on lesson {}: Score {}, Completed: {}",
-                currentUser.getUsername(), lesson.getId(), String.format("%.2f", lessonProgress.getScore()), lessonProgress.isCompleted());
+        logger.info("Lesson progress updated for user {} on lesson {}: Score {}, Correct {}, Attempted {}, Completed: {}",
+                currentUser.getUsername(), lesson.getId(), String.format("%.2f", lessonProgress.getScore()),
+                lessonProgress.getCorrectAnswersCount(), lessonProgress.getTotalQuestionsAttempted(), lessonProgress.isCompleted());
 
-        ProgressDto progressDto = ProgressDto.builder()
+        LessonProgressDto progressDto = LessonProgressDto.builder()
                 .correctCount(lessonProgress.getCorrectAnswersCount())
                 .incorrectCount(lessonProgress.getIncorrectAnswersCount())
                 .timeSpent(lessonProgress.getTimeSpentSeconds())
@@ -244,14 +254,67 @@ public class LearningService {
 
         return LessonSubmissionResponse.builder()
                 .lessonId(lesson.getId())
-                .score(scoreForThisSubmission)
-                .correctCount(correctCountInSubmission)
-                .totalQuestionsAttempted(totalQuestionsAttemptedInThisSubmission)
-                // .feedback(feedbackList) // LOẠI BỎ feedbackList khỏi response
-                .progress(progressDto)
+                .score(scoreForThisSubmission) // Điểm của riêng lần submit này
+                .correctCount(correctCountInSubmission) // Số câu đúng của riêng lần submit này
+                .totalQuestionsAttempted(totalQuestionsAttemptedInThisSubmission) // Số câu đã thử trong lần submit này
+                .progress(progressDto) // Tiến độ tổng thể của bài học
                 .build();
     }
 
+    /**
+     * ST-61: Lấy tiến độ của người dùng hiện tại cho một bài học cụ thể.
+     */
+    @Transactional(readOnly = true)
+    public LessonProgressDto getLessonProgress(Long lessonId) {
+        User currentUser = getCurrentAuthenticatedUser();
+        logger.info("User {} fetching progress for lesson ID: {}", currentUser.getUsername(), lessonId);
+
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson", "id", String.valueOf(lessonId)));
+
+        LessonProgress lessonProgress = lessonProgressRepository.findByUserIdAndLessonId(currentUser.getId(), lesson.getId())
+                .orElseGet(() -> {
+                    logger.info("No progress found for user {} and lesson {}. Returning default (not started) progress.", currentUser.getUsername(), lesson.getId());
+                    return LessonProgress.builder()
+                            .user(currentUser)
+                            .lesson(lesson)
+                            .correctAnswersCount(0)
+                            .incorrectAnswersCount(0)
+                            .totalQuestionsAttempted(0)
+                            .timeSpentSeconds(0L)
+                            .score(0.0)
+                            .completed(false)
+                            .createdAt(LocalDateTime.now()) // Or null if you prefer not to set it for default
+                            .updatedAt(LocalDateTime.now()) // Or null
+                            .build();
+                });
+        return mapLessonProgressToDto(lessonProgress);
+    }
+
+    private LessonProgressDto mapLessonProgressToDto(LessonProgress lessonProgress) {
+        // lessonId và userId sẽ được lấy từ lessonProgress.getLesson().getId() và lessonProgress.getUser().getId()
+        // nếu chúng không null.
+        Long lessonId = (lessonProgress.getLesson() != null) ? lessonProgress.getLesson().getId() : null;
+        Long userId = (lessonProgress.getUser() != null) ? lessonProgress.getUser().getId() : null;
+
+        return LessonProgressDto.builder()
+                .lessonId(lessonId)
+                .userId(userId)
+                .correctCount(lessonProgress.getCorrectAnswersCount())
+                .incorrectCount(lessonProgress.getIncorrectAnswersCount())
+                .totalQuestionsAttempted(lessonProgress.getTotalQuestionsAttempted())
+                .timeSpentSeconds(lessonProgress.getTimeSpentSeconds())
+                .score(lessonProgress.getScore())
+                .completed(lessonProgress.isCompleted())
+                .completedAt(lessonProgress.getCompletedAt())
+                .lastAttemptedAt(lessonProgress.getUpdatedAt()) // updatedAt là thời điểm cuối cùng có thay đổi
+                .build();
+    }
+
+
+    /**
+     * ST-57: Lấy danh sách các lỗi sai của người dùng hiện tại.
+     */
     @Transactional(readOnly = true)
     public Page<MistakeListItemDto> getUserMistakes(Long lessonId, Pageable pageable) {
         User currentUser = getCurrentAuthenticatedUser();
@@ -281,9 +344,12 @@ public class LearningService {
         return new PageImpl<>(dtoList, pageable, mistakePage.getTotalElements());
     }
 
+    /**
+     * ST-57: Lấy thông tin chi tiết các câu hỏi để người dùng ôn tập lỗi sai.
+     */
     @Transactional(readOnly = true)
     public ReviewSessionDto getMistakeReviewSession(ReviewMistakesRequestDto request) {
-        User currentUser = getCurrentAuthenticatedUser();
+        User currentUser = getCurrentAuthenticatedUser(); // Đảm bảo user đã đăng nhập và có quyền
         logger.info("User {} requesting review session for question IDs: {}", currentUser.getUsername(), request.getQuestionIds());
 
         if (request.getQuestionIds() == null || request.getQuestionIds().isEmpty()) {
@@ -291,6 +357,8 @@ public class LearningService {
         }
 
         List<Question> questionsToReview = questionRepository.findAllById(request.getQuestionIds());
+        // TODO (Optional): Thêm logic kiểm tra xem các questionIds này có thực sự là lỗi sai của user không
+        // hoặc user có quyền truy cập chúng không, trước khi trả về.
 
         List<QuestionDto> questionDtos = questionsToReview.stream()
                 .map(this::mapQuestionToDto)
@@ -301,6 +369,7 @@ public class LearningService {
                 .build();
     }
 
+    // Helper để lấy user hiện tại (quan trọng)
     private User getCurrentAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof UserPrincipal)) {
@@ -311,6 +380,7 @@ public class LearningService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", String.valueOf(userPrincipal.getId()) + " (from UserPrincipal)"));
     }
 
+    // Helper để cắt ngắn nội dung (nếu cần)
     private String truncateContent(String content, int maxLength) {
         if (content == null || content.length() <= maxLength) {
             return content;
