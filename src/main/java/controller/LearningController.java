@@ -4,6 +4,9 @@ import dto.Learning.LessonDetailDto;
 import dto.Learning.LessonListItemDto;
 import dto.Learning.LessonSubmissionResponse; // THÊM IMPORT
 import dto.Learning.SubmitLessonRequest;    // THÊM IMPORT
+import dto.Learning.ReviewSessionDto;
+import dto.Learning.MistakeListItemDto;
+import dto.Learning.ReviewMistakesRequestDto;
 import service.LearningService;
 
 import jakarta.validation.Valid; // THÊM IMPORT
@@ -53,5 +56,24 @@ public class LearningController {
         LessonSubmissionResponse response = learningService.submitLessonAnswers(request);
         logger.info("Successfully processed answer submission for lesson ID: {}. Score for this submission: {}", request.getLessonId(), response.getScore());
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/mistakes")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Page<MistakeListItemDto>> getUserMistakes(
+            @RequestParam(required = false) Long lessonId,
+            @PageableDefault(size = 10, sort = "answeredAt,desc") Pageable pageable) {
+        logger.info("Received request to get user mistakes. LessonId filter: {}, Pageable: {}", lessonId, pageable);
+        Page<MistakeListItemDto> mistakes = learningService.getUserMistakes(lessonId, pageable);
+        return ResponseEntity.ok(mistakes);
+    }
+
+    @PostMapping("/mistakes/review")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReviewSessionDto> reviewMistakes(
+            @Valid @RequestBody ReviewMistakesRequestDto request) {
+        logger.info("Received request to review mistakes for question IDs: {}", request.getQuestionIds());
+        ReviewSessionDto reviewSession = learningService.getMistakeReviewSession(request);
+        return ResponseEntity.ok(reviewSession);
     }
 }
