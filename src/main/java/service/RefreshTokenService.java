@@ -16,7 +16,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.*;
+
 @Service
+@RequiredArgsConstructor
 public class RefreshTokenService {
     @Value("${app.jwt.refresh-expiration-ms:86400000}")
     private Long refreshTokenDurationMs;
@@ -26,10 +29,6 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.userRepository = userRepository;
-    }
 
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);

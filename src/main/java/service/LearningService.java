@@ -8,7 +8,6 @@ import dto.Learning.LessonListItemDto;
 import dto.Learning.LessonProgressDto; // Cho ST-61
 import dto.Learning.LessonSubmissionResponse;
 import dto.Learning.MistakeListItemDto;
-import dto.Learning.LessonProgressDto;
 import dto.Learning.QuestionDto;
 import dto.Learning.ReviewMistakesRequestDto;
 import dto.Learning.ReviewSessionDto;
@@ -165,7 +164,7 @@ public class LearningService {
             if (question == null) {
                 logger.warn("User {} submitted answer for non-existent questionId {} in lesson {}",
                         currentUser.getUsername(), userAnswerDto.getQuestionId(), lesson.getId());
-                continue; // Bỏ qua câu trả lời cho câu hỏi không tồn tại
+                continue;
             }
 
             boolean isCorrect = false;
@@ -190,11 +189,13 @@ public class LearningService {
             if (isCorrect) {
                 correctCountInSubmission++;
             } else {
-                Mistake mistake = new Mistake();
-                mistake.setUser(currentUser);
-                mistake.setQuestion(question);
-                mistake.setUserAnswerText(userAnswerDto.getUserAnswer());
-                mistake.setUserAnswerOptionId(userAnswerDto.getUserAnswerId());
+                Mistake mistake = Mistake.builder() // Sử dụng builder nếu có
+                        .user(currentUser)
+                        .question(question)
+                        .userAnswerText(userAnswerDto.getUserAnswer())
+                        .userAnswerOptionId(userAnswerDto.getUserAnswerId())
+                        .build();
+                // answeredAt sẽ được tự động set bởi @CreationTimestamp
                 mistakeRepository.save(mistake);
                 logger.debug("Mistake saved for user {} on question {}", currentUser.getUsername(), question.getId());
             }
@@ -207,11 +208,18 @@ public class LearningService {
         LessonProgress lessonProgress = lessonProgressRepository.findByUserIdAndLessonId(currentUser.getId(), lesson.getId())
                 .orElseGet(() -> {
                     logger.info("Creating new LessonProgress for user {} and lesson {}", currentUser.getId(), lesson.getId());
-                    LessonProgress newProgress = new LessonProgress();
-                    newProgress.setUser(currentUser);
-                    newProgress.setLesson(lesson);
-                    // Các giá trị mặc định đã được set trong LessonProgress entity (ví dụ: count=0, completed=false)
-                    return newProgress;
+                    return LessonProgress.builder() // Sử dụng builder nếu có
+                            .user(currentUser)
+                            .lesson(lesson)
+                            .correctAnswersCount(0)
+                            .incorrectAnswersCount(0)
+                            .totalQuestionsAttempted(0)
+                            .timeSpentSeconds(0L)
+                            .score(0.0)
+                            .completed(false)
+                            .createdAt(LocalDateTime.now()) // Set thời điểm tạo
+                            .updatedAt(LocalDateTime.now()) // Set thời điểm cập nhật ban đầu
+                            .build();
                 });
 
         // Cập nhật progress
@@ -232,32 +240,28 @@ public class LearningService {
             logger.warn("timeSpentSeconds is null in SubmitLessonRequest for lessonId: {}. No time will be added for this submission.", request.getLessonId());
         }
 
+        // updatedAt sẽ tự động cập nhật bởi @UpdateTimestamp khi save
+        // nhưng completedAt cần set thủ công
         if (!lessonProgress.isCompleted() && lessonProgress.getTotalQuestionsAttempted() >= totalQuestionsInLesson) {
             // Logic hoàn thành có thể phức tạp hơn, ví dụ: đạt điểm tối thiểu
-            // Hiện tại: hoàn thành nếu đã thử làm tất cả các câu
             lessonProgress.setCompleted(true);
             lessonProgress.setCompletedAt(LocalDateTime.now());
         }
-        // updatedAt sẽ tự động cập nhật bởi @UpdateTimestamp
 
-        lessonProgressRepository.save(lessonProgress);
+        LessonProgress savedProgress = lessonProgressRepository.save(lessonProgress); // Lưu lại progress đã cập nhật
         logger.info("Lesson progress updated for user {} on lesson {}: Score {}, Correct {}, Attempted {}, Completed: {}",
-                currentUser.getUsername(), lesson.getId(), String.format("%.2f", lessonProgress.getScore()),
-                lessonProgress.getCorrectAnswersCount(), lessonProgress.getTotalQuestionsAttempted(), lessonProgress.isCompleted());
+                currentUser.getUsername(), lesson.getId(), String.format("%.2f", savedProgress.getScore()),
+                savedProgress.getCorrectAnswersCount(), savedProgress.getTotalQuestionsAttempted(), savedProgress.isCompleted());
 
-        LessonProgressDto progressDto = LessonProgressDto.builder()
-                .correctCount(lessonProgress.getCorrectAnswersCount())
-                .incorrectCount(lessonProgress.getIncorrectAnswersCount())
-                .timeSpent(lessonProgress.getTimeSpentSeconds())
-                .completed(lessonProgress.isCompleted())
-                .build();
+        // Sử dụng mapLessonProgressToDto để tạo progress DTO đầy đủ cho response
+        LessonProgressDto updatedLessonProgressDto = mapLessonProgressToDto(savedProgress);
 
         return LessonSubmissionResponse.builder()
                 .lessonId(lesson.getId())
-                .score(scoreForThisSubmission) // Điểm của riêng lần submit này
-                .correctCount(correctCountInSubmission) // Số câu đúng của riêng lần submit này
-                .totalQuestionsAttempted(totalQuestionsAttemptedInThisSubmission) // Số câu đã thử trong lần submit này
-                .progress(progressDto) // Tiến độ tổng thể của bài học
+                .score(scoreForThisSubmission)
+                .correctCount(correctCountInSubmission)
+                .totalQuestionsAttempted(totalQuestionsAttemptedInThisSubmission)
+                .progress(updatedLessonProgressDto) // SỬ DỤNG LessonProgressDto ĐẦY ĐỦ
                 .build();
     }
 
@@ -284,22 +288,22 @@ public class LearningService {
                             .timeSpentSeconds(0L)
                             .score(0.0)
                             .completed(false)
-                            .createdAt(LocalDateTime.now()) // Or null if you prefer not to set it for default
-                            .updatedAt(LocalDateTime.now()) // Or null
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
                             .build();
                 });
         return mapLessonProgressToDto(lessonProgress);
     }
 
+    // Helper method để map LessonProgress entity sang LessonProgressDto
+    // ĐẢM BẢO MAP ĐẦY ĐỦ CÁC TRƯỜNG
     private LessonProgressDto mapLessonProgressToDto(LessonProgress lessonProgress) {
-        // lessonId và userId sẽ được lấy từ lessonProgress.getLesson().getId() và lessonProgress.getUser().getId()
-        // nếu chúng không null.
-        Long lessonId = (lessonProgress.getLesson() != null) ? lessonProgress.getLesson().getId() : null;
-        Long userId = (lessonProgress.getUser() != null) ? lessonProgress.getUser().getId() : null;
+        Long lessonProgressLessonId = (lessonProgress.getLesson() != null) ? lessonProgress.getLesson().getId() : null;
+        Long lessonProgressUserId = (lessonProgress.getUser() != null) ? lessonProgress.getUser().getId() : null;
 
         return LessonProgressDto.builder()
-                .lessonId(lessonId)
-                .userId(userId)
+                .lessonId(lessonProgressLessonId)
+                .userId(lessonProgressUserId)
                 .correctCount(lessonProgress.getCorrectAnswersCount())
                 .incorrectCount(lessonProgress.getIncorrectAnswersCount())
                 .totalQuestionsAttempted(lessonProgress.getTotalQuestionsAttempted())

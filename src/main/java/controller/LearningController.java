@@ -1,6 +1,14 @@
 package controller;
 
-import dto.Learning.*;
+import dto.Learning.LessonListItemDto;
+import dto.Learning.LessonDetailDto;
+import dto.Learning.LessonSubmissionResponse;
+import dto.Learning.MistakeListItemDto;
+import dto.Learning.ReviewMistakesRequestDto;
+import dto.Learning.ReviewSessionDto;
+import dto.Learning.LessonProgressDto;
+import dto.Learning.SubmitLessonRequest;
+
 import service.LearningService;
 
 import jakarta.validation.Valid; // THÊM IMPORT

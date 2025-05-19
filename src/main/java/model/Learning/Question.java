@@ -6,12 +6,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.util.List; // Cho các options của multiple choice
 import java.util.Set;
+import lombok.*;
 
 @Entity
 @Table(name = "questions")
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Question {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

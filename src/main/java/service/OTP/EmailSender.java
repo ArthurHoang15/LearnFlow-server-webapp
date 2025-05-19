@@ -6,18 +6,15 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger; // Thêm logger
 import org.slf4j.LoggerFactory; // Thêm logger
+import lombok.*;
 
 @Service("emailSenderService") // Đặt tên cho bean để phân biệt nếu có nhiều implementation SenderService
+@RequiredArgsConstructor
 public class EmailSender implements SenderService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailSender.class); // Logger
 
     private final JavaMailSender mailSender;
-
-    @Autowired // Có thể dùng constructor injection
-    public EmailSender(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
 
     @Override
     public void send(String to, String subject, String content) {

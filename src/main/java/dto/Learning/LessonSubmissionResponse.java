@@ -1,9 +1,11 @@
-package dto.Learning;
+package dto.Learning; // Hoặc package DTO của bạn
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+// import dto.learning.FeedbackDto; // Đã loại bỏ
+import dto.Learning.LessonProgressDto; // ĐẢM BẢO IMPORT NÀY (HOẶC XÓA NẾU PROGRESSDTO BỊ XÓA)
 
 import java.util.List;
 
@@ -13,10 +15,9 @@ import java.util.List;
 @Builder
 public class LessonSubmissionResponse {
     private Long lessonId;
-    private double score; // Tính theo % hoặc điểm (0.0 - 100.0)
-    private int correctCount; // Số câu đúng trong lần submit này
-    private int totalQuestionsAttempted; // Số câu đã thử trong lần submit này
-    // private int totalQuestionsInLesson; // Tùy chọn: Tổng số câu trong bài học
-    private List<FeedbackDto> feedback; // Feedback cho từng câu đã trả lời
-    private ProgressDto progress; // Thông tin tiến độ tổng thể của bài học sau khi submit
+    private double score;
+    private int correctCount;
+    private int totalQuestionsAttempted;
+    // private List<FeedbackDto> feedback; // ĐÃ LOẠI BỎ
+    private LessonProgressDto progress; // SỬA KIỂU DỮ LIỆU Ở ĐÂY
 }

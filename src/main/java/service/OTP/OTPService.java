@@ -17,8 +17,10 @@ import repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
+import lombok.*;
 
 @Service
+@RequiredArgsConstructor
 public class OTPService {
 
     private static final Logger logger = LoggerFactory.getLogger(OTPService.class);
@@ -30,16 +32,6 @@ public class OTPService {
 
     @Value("${app.otp.expiry-minutes:5}")
     private int otpExpiryMinutes;
-
-    public OTPService(OTPRepository otpRepository,
-                      @Qualifier("emailSenderService") SenderService emailSenderService,
-                      UserRepository userRepository,
-                      PasswordEncoder passwordEncoder) {
-        this.otpRepository = otpRepository;
-        this.emailSenderService = emailSenderService;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     // --- Phương thức cho OTP Đăng Ký ---
     @Transactional
