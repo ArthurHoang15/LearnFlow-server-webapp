@@ -1,8 +1,6 @@
 package entity;
 
 import jakarta.persistence.*;
-
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,9 +9,10 @@ public class Lesson {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer lessonsId;
 
-    @Column(name = "chapter_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "chapter_id", referencedColumnName = "id", nullable = false)
     private Integer chapterId;
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -26,12 +25,12 @@ public class Lesson {
     private LocalDateTime updatedAt;
 
     // Getter và Setter
-    public Integer getId() {
-        return id;
+    public Integer getLessonsId() {
+        return lessonsId;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setLessonsId(Integer lessonsId) {
+        this.lessonsId = lessonsId;
     }
 
     public Integer getChapterId() {
