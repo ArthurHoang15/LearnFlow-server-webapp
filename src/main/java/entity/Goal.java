@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class Goal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer goal_id;
 
     @Column(name = "user_id", nullable = false)
     private Integer userId;
@@ -37,13 +37,7 @@ public class Goal {
     }
 
     // Getters và Setters
-    public Integer getId() {
-        return id;
-    }
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
 
     public Integer getUserId() {
         return userId;
@@ -83,5 +77,13 @@ public class Goal {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getGoal_id() {
+        return goal_id;
+    }
+
+    public void setGoal_id(Integer goal_id) {
+        this.goal_id = goal_id;
     }
 }

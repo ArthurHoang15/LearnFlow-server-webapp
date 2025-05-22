@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class DailyProgress {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer progress_id;
 
     @Column(name = "user_id", nullable = false)
     private Integer userId;
@@ -41,13 +41,7 @@ public class DailyProgress {
     }
 
     // Getters và Setters
-    public Integer getId() {
-        return id;
-    }
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
 
     public Integer getUserId() {
         return userId;
@@ -95,5 +89,13 @@ public class DailyProgress {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getProgress_id() {
+        return progress_id;
+    }
+
+    public void setProgress_id(Integer progress_id) {
+        this.progress_id = progress_id;
     }
 }
