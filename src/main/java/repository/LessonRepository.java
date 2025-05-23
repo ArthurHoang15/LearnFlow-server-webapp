@@ -1,5 +1,4 @@
 package repository;
-
 import model.Learning.Lesson;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor; // Thêm nếu sau này cần lọc động
